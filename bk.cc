@@ -1,12 +1,46 @@
 #include <set>
 #include <complex>
 #include <iostream>
-#include <unordered_set>
+#include <algorithm>
+#include <iterator>
 
 #include "spin_op.h"
 
-std::unordered_set<std::size_t> occupation_set(std::size_t index) {
-    std::unordered_set<std::size_t> indices;
+template<typename T>
+std::set<T> set_difference(const std::set<T>& set1, const std::set<T>& set2) {
+    std::set<T> result;
+    std::set_difference(set1.begin(),
+                        set1.end(),
+                        set2.begin(),
+                        set2.end(),
+                        std::inserter(result, result.begin()));
+    return result;
+}
+
+template<typename T>
+std::set<T> set_intersection(const std::set<T>& set1, const std::set<T>& set2) {
+    std::set<T> result;
+    std::set_intersection(set1.begin(),
+                          set1.end(),
+                          set2.begin(),
+                          set2.end(),
+                          std::inserter(result, result.begin()));
+    return result;
+}
+
+template<typename T>
+std::set<T> set_symmetric_difference(const std::set<T>& set1, const std::set<T>& set2) {
+    std::set<T> result;
+    std::set_symmetric_difference(set1.begin(),
+                                  set1.end(), 
+                                  set2.begin(), 
+                                  set2.end(),
+                                  std::inserter(result, result.begin()));
+    return result;
+}
+
+std::set<std::size_t> occupation_set(std::size_t index) {
+    std::set<std::size_t> indices;
     index += 1;
     indices.insert(index - 1);
     
@@ -21,8 +55,8 @@ std::unordered_set<std::size_t> occupation_set(std::size_t index) {
     return indices;
 }
 
-std::unordered_set<std::size_t> parity_set(std::size_t index) {
-    std::unordered_set<std::size_t> indices;
+std::set<std::size_t> parity_set(std::size_t index) {
+    std::set<std::size_t> indices;
     
     while (index > 0) {
         indices.insert(index - 1);
@@ -32,8 +66,8 @@ std::unordered_set<std::size_t> parity_set(std::size_t index) {
     return indices;
 }
 
-std::unordered_set<std::size_t> update_set(std::size_t index, std::size_t n_qubits) {
-    std::unordered_set<std::size_t> indices;
+std::set<std::size_t> update_set(std::size_t index, std::size_t n_qubits) {
+    std::set<std::size_t> indices;
     
     index += 1;
     index += index & -index;
@@ -46,75 +80,44 @@ std::unordered_set<std::size_t> update_set(std::size_t index, std::size_t n_qubi
     return indices;
 }
 
-std::unordered_set<int> remainder_set(int index) {
-    std::unordered_set<int> result;
-    auto parity = parity_set(index);
-    auto occupation = occupation_set(index);
-    
-    for (const auto& elem : parity) {
-        if (occupation.find(elem) == occupation.end()) {
-            result.insert(elem);
-        }
-    }
-    return result;
+std::set<std::size_t> remainder_set(int index) {
+    return set_difference(parity_set(index), occupation_set(index));
 }
 
-template<typename T>
-std::unordered_set<T> symmetric_difference(const std::unordered_set<T>& set1, const std::unordered_set<T>& set2) {
-    std::unordered_set<T> result;
-    for (const auto& elem : set1) {
-        if (set2.find(elem) == set2.end()) result.insert(elem);
-    }
-    for (const auto& elem : set2) {
-        if (set1.find(elem) == set1.end()) result.insert(elem);
-    }
-    return result;
+std::set<std::size_t> F_ij_set(std::size_t i, std::size_t j) {
+    return set_symmetric_difference(occupation_set(i), occupation_set(j));
 }
 
-std::unordered_set<std::size_t> remainder_set(std::size_t index) {
-    return symmetric_difference(parity_set(index), occupation_set(index));
+std::set<std::size_t> P0_ij_set(std::size_t i, std::size_t j) {
+    return set_symmetric_difference(parity_set(i), parity_set(j));
 }
 
-std::unordered_set<std::size_t> F_ij_set(std::size_t i, std::size_t j) {
-    return symmetric_difference(occupation_set(i), occupation_set(j));
+std::set<std::size_t> P1_ij_set(std::size_t i, std::size_t j) {
+    return set_symmetric_difference(parity_set(i), remainder_set(j));
 }
 
-std::unordered_set<std::size_t> P0_ij_set(std::size_t i, std::size_t j) {
-    return symmetric_difference(parity_set(i), parity_set(j));
+std::set<std::size_t> P2_ij_set(std::size_t i, std::size_t j) {
+    return set_symmetric_difference(remainder_set(i), parity_set(j));
 }
 
-std::unordered_set<std::size_t> P1_ij_set(std::size_t i, std::size_t j) {
-    return symmetric_difference(parity_set(i), remainder_set(j));
+std::set<std::size_t> P3_ij_set(std::size_t i, std::size_t j) {
+    return set_symmetric_difference(remainder_set(i), remainder_set(j));
 }
 
-std::unordered_set<std::size_t> P2_ij_set(std::size_t i, std::size_t j) {
-    return symmetric_difference(remainder_set(i), parity_set(j));
+std::set<std::size_t> U_ij_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
+    return set_symmetric_difference(update_set(i, n_qubits), update_set(j, n_qubits));
 }
 
-std::unordered_set<std::size_t> P3_ij_set(std::size_t i, std::size_t j) {
-    return symmetric_difference(remainder_set(i), remainder_set(j));
+std::set<std::size_t> alpha_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
+    return set_intersection(update_set(i, n_qubits), parity_set(j));
 }
 
-std::unordered_set<std::size_t> U_ij_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
-    return symmetric_difference(update_set(i, n_qubits), update_set(j, n_qubits));
+std::set<std::size_t> U_diff_a_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
+    return set_difference(U_ij_set(i, j, n_qubits), alpha_set(i, j, n_qubits));
 }
 
-std::unordered_set<std::size_t> alpha_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
-    std::unordered_set<std::size_t> result;
-    auto set1 = update_set(i, n_qubits);
-    auto set2 = parity_set(j);
-    for (const auto& elem : set1) {
-        if (set2.find(elem) != set2.end()) result.insert(elem);
-    }
-    return result;
-}
-
-std::unordered_set<std::size_t> U_diff_a_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
-    return symmetric_difference(U_ij_set(i, j, n_qubits), alpha_set(i, j, n_qubits));
-}
-
-std::unordered_set<std::size_t> P0_ij_diff_a_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
-    return symmetric_difference(P0_ij_set(i, j), alpha_set(i, j, n_qubits));
+std::set<std::size_t> P0_ij_diff_a_set(std::size_t i, std::size_t j, std::size_t n_qubits) {
+    return set_symmetric_difference(P0_ij_set(i, j), alpha_set(i, j, n_qubits));
 }
 
 /**
@@ -142,7 +145,7 @@ void seeley_richard_love(int i, int j, double coef, int n_qubits) {
     }
 
     // Case 1
-    else if (i % 2 == 0 && j % 2 == 0) {
+    else if (i % 2 == 0 and j % 2 == 0) {
         // Create padding operators
         cudaq::spin_op x_pad;
         for (int index : U_diff_a_set(i, j, n_qubits)) {
@@ -180,7 +183,7 @@ void seeley_richard_love(int i, int j, double coef, int n_qubits) {
     }
 
     // Case 2
-    else if (i % 2 == 1 && j % 2 == 0 && _parity_set(j).contains(i)) {
+    else if (i % 2 == 1 and j % 2 == 0 and not parity_set(j).contains(i)) {
         cudaq::spin_op x_pad;
         for (int index : U_diff_a_set(i, j, n_qubits)) {
             x_pad *= cudaq::spin::x(index);
@@ -194,35 +197,52 @@ void seeley_richard_love(int i, int j, double coef, int n_qubits) {
         cudaq::spin_op left_pad = x_pad * y_pad;
 
         cudaq::spin_op right_pad_1;
-        std::unordered_set<std::size_t> P0_minus_alpha;
+        std::set<std::size_t> P0_minus_alpha;
         std::set_difference(P0_ij_set(i, j).begin(), 
                             P0_ij_set(i, j).end(), 
-                            alpha(i, j, n_qubits).begin(), 
-                            alpha(i, j, n_qubits).end(), 
+                            alpha_set(i, j, n_qubits).begin(), 
+                            alpha_set(i, j, n_qubits).end(), 
                             std::inserter(P0_minus_alpha, P0_minus_alpha.begin()));
+
         for (int index : P0_minus_alpha) {
             right_pad_1 *= cudaq::spin::z(index);
         }
         cudaq::spin_op right_pad_2;
-        std::unordered_set<std::size_t> P2_minus_alpha;
+        std::set<std::size_t> P2_minus_alpha;
         std::set_difference(P2_ij_set(i, j).begin(), 
                             P2_ij_set(i, j).end(), 
-                            alpha(i, j, n_qubits).begin(), 
-                            alpha(i, j, n_qubits).end(), 
+                            alpha_set(i, j, n_qubits).begin(), 
+                            alpha_set(i, j, n_qubits).end(), 
                             std::inserter(P2_minus_alpha, P2_minus_alpha.begin()));
         for (int index : P2_minus_alpha) {
             right_pad_2 *= cudaq::spin::z(index);
         }
 
-        cudaq:spin_op op1 = left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad1;
-        cudaq:spin_op op2 = left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad1;
-        cudaq:spin_op op3 = left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad2;
-        cudaq:spin_op op4 = left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad2;
-
-        if (i < j) {
-        } else {
+        std::cout << "[";
+        for (auto p : P0_ij_set(i,j)) {
+            std::cout << p << " "; 
         }
-    }
+        std::cout << "]\n\n";
+        std::cout << "[";
+        for (auto p : P2_ij_set(i,j)) {
+            std::cout << p << " "; 
+        }
+        std::cout << "]\n\n";
+
+        right_pad_1.dump();
+        right_pad_2.dump();
+
+        seeley_richard_love_result = left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_1;
+        seeley_richard_love_result = left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1;
+        seeley_richard_love_result = left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_2;
+        seeley_richard_love_result = left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_2;
+
+if (i < j) {
+
+} else {
+}
+seeley_richard_love_result.dump();
+}
 }
 
 int main() {
@@ -232,7 +252,8 @@ int main() {
     op += cudaq::spin::x(4)*cudaq::spin::z(5);
     op -= identity;
     // seeley_richard_love(1, 1, 2.5, n_qubits);
-    seeley_richard_love(2, 4, 2.5, n_qubits);
+    seeley_richard_love(3, 2, 2.5, n_qubits);
+
     return 0;
 }
 
