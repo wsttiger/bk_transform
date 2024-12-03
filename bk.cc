@@ -401,6 +401,76 @@ void seeley_richard_love(std::size_t i, std::size_t j, double coef, int n_qubits
         seeley_richard_love_result += c2 * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_3;
         seeley_richard_love_result += c3 * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_4;
     }
+
+    // Case 8
+    else if (i % 2 == 1 and j % 2 == 1 and parity_set(j).contains(i) and not in update_set(i, n_qubits).contains(j)) {
+        cudaq::spin_op left_pad;
+        for (auto index : U_ij_set(i, j, n_qubits)) {
+            left_pad *= cudaq::spin::x(index);
+        }
+
+        cudaq::spin_op right_pad_1;
+        for (auto index : set_difference(P0_ij_set(i, j), {i})) {
+            right_pad_1 *= cudaq::spin::z(index);
+        }
+        cudaq::spin_op right_pad_2;
+        for (auto index : set_difference(P1_ij_set(i, j), {i})) {
+            right_pad_2 *= cudaq::spin::z(index);
+        }
+        cudaq::spin_op right_pad_3;
+        for (auto index : set_difference(P2_ij_set(i, j), {i})) {
+            right_pad_3 *= cudaq::spin::z(index);
+        }
+        cudaq::spin_op right_pad_4;
+        for (auto index : set_difference(P3_ij_set(i, j), {i})) {
+            right_pad_4 *= cudaq::spin::z(index);
+        }
+
+        seeley_richard_love_result += double_complex(  0.0, -coef) * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result += double_complex( coef, 0.0)   * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_2;
+        seeley_richard_love_result += double_complex( coef, 0.0)   * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_3;
+        seeley_richard_love_result += double_complex(  0.0,  coef) * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_4;
+    }
+
+    // Case 9
+    else if (i % 2 == 1 and j % 2 == 1 and not parity_set(j).contains(i) and update_set(i, n_qubits).contains(j)) {
+        cudaq::spin_op left_pad_3;
+        auto x_range_1 = set_difference(U_ij_set(i, j, n_qubits), {j}); 
+        for (auto index : x_range_1) {
+            left_pad_3 *= cudaq::spin::x(index);
+        }
+
+        cudaq::spin_op left_pad_1;
+        auto x_range_2 = set_difference(x_range_1, alpha_set(i, j, n_qubits));
+        for (auto index : x_range_2) {
+            left_pad_1 *= cudaq::spin::x(index);
+        }
+
+        cudaq::spin_op left_pad_2;
+        auto x_range_3 = set_difference(set_union(x_range_1, {i}), alpha_set(i, j, n_qubits));
+        for (auto index : x_range_3) {
+            left_pad_2 *= cudaq::spin::x(index);
+        }
+
+        auto z_range_1 = set_difference(P2_ij_set(i, j), alpha_set(i, j, n_qubits));
+        cudaq::spin_op z_pad_1;
+        for (auto index : z_range_1) {
+            z_pad_1 *= cudaq::spin::z(index);
+        }
+        cudaq::spin_op y_pad;
+        for (auto index : alpha_set(i, j, n_qubits)) {
+            y_pad *= cudaq::spin::y(index);
+        }
+        auto right_pad_1 = z_pad_1 * y_pad;
+
+        auto z_range_2 = set_difference(P0_ij_set(i, j), alpha(i, j, n_qubits));
+        cudaq::spin_op z_pad_2;
+        for (auto index : z_range_2) {
+            z_pad_2 *= cudaq::spin::z(index);
+        }
+        auto right_pad_2 = z_pad_2 * y_pad;
+        
+    }
 }
 
 int main() {
