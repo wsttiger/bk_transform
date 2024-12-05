@@ -135,6 +135,7 @@ std::set<std::size_t> P0_ij_diff_a_set(std::size_t i, std::size_t j, std::size_t
 cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<double> coef, int n_qubits) {
 
     using double_complex = std::complex<double>;
+    const double_complex imag_i = double_complex(0.0, 1.0);
 
     coef *= 0.25;
 
@@ -173,15 +174,15 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
         cudaq::spin_op op4 = left_pad * cudaq::spin::y(j) * cudaq::spin::y(i);
 
         if (i < j) {
-            seeley_richard_love_result += double_complex( coef, 0.0) * op1;
-            seeley_richard_love_result += double_complex(-coef, 0.0) * op2;
-            seeley_richard_love_result += double_complex(0.0, -coef) * op3;
-            seeley_richard_love_result += double_complex(0.0, -coef) * op4;
+            seeley_richard_love_result +=           coef * op1;
+            seeley_richard_love_result +=          -coef * op2;
+            seeley_richard_love_result += -imag_i * coef * op3;
+            seeley_richard_love_result += -imag_i * coef * op4;
         } else {  
-            seeley_richard_love_result += double_complex(0.0, -coef) * op1;
-            seeley_richard_love_result += double_complex(0.0,  coef) * op2;
-            seeley_richard_love_result += double_complex(-coef, 0.0) * op3;
-            seeley_richard_love_result += double_complex(-coef, 0.0) * op4;
+            seeley_richard_love_result += -imag_i * coef * op1;
+            seeley_richard_love_result +=  imag_i * coef * op2;
+            seeley_richard_love_result +=          -coef * op3;
+            seeley_richard_love_result +=          -coef * op4;
         }
     }
 
@@ -212,15 +213,15 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
 
         double_complex c0, c1, c2, c3;
         if (i < j) {
-            c0 = double_complex( coef, 0.0);
-            c1 = double_complex(  0.0, -coef);
-            c2 = double_complex(-coef, 0.0);
-            c3 = double_complex(  0.0, -coef);
+            c0 =           coef;
+            c1 = -imag_i * coef;
+            c2 =          -coef;
+            c3 = -imag_i * coef;
         } else {
-            c0 = double_complex(  0.0, -coef);
-            c1 = double_complex(-coef, 0.0);
-            c2 = double_complex(  0.0,  coef);
-            c3 = double_complex(-coef, 0.0);
+            c0 = -imag_i * coef;
+            c1 =          -coef;
+            c2 =  imag_i * coef;
+            c3 =          -coef;
         }
 
         seeley_richard_love_result += c0 * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_1;
@@ -246,10 +247,10 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_2 *= cudaq::spin::z(index);
         }
 
-        seeley_richard_love_result += double_complex(coef, 0.0)   * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_1;
-        seeley_richard_love_result += double_complex( 0.0, -coef) * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
-        seeley_richard_love_result += double_complex(coef, 0.0)   * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_2;
-        seeley_richard_love_result += double_complex( 0.0,  coef) * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result += -imag_i * coef * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_2;
+        seeley_richard_love_result +=  imag_i * coef * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2;
     }
 
     // Case 4
@@ -276,15 +277,15 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
      
         double_complex c0, c1, c2, c3;
         if (i < j) {
-            c0 = double_complex(-coef, 0.0);
-            c1 = double_complex(  0.0, -coef);
-            c2 = double_complex( coef, 0.0);
-            c3 = double_complex(  0.0, -coef);
+            c0 =          -coef;
+            c1 = -imag_i * coef;
+            c2 =           coef;
+            c3 = -imag_i * coef;
         } else {
-            c0 = double_complex(  0.0,  coef);
-            c1 = double_complex(-coef, 0.0);
-            c2 = double_complex(  0.0, -coef);
-            c3 = double_complex(-coef, 0.0);
+            c0 =  imag_i * coef;
+            c1 =          -coef;
+            c2 = -imag_i * coef;
+            c3 =          -coef;
         }
         seeley_richard_love_result += c0 * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
         seeley_richard_love_result += c1 * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1;
@@ -334,10 +335,10 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad *= cudaq::spin::z(index);
         }
 
-        seeley_richard_love_result += double_complex( coef, 0.0) * left_pad * cudaq::spin::x(i);
-        seeley_richard_love_result += double_complex(0.0, -coef) * left_pad * cudaq::spin::y(i);
-        seeley_richard_love_result += double_complex(0.0,  coef) * left_pad * cudaq::spin::y(i) * right_pad;
-        seeley_richard_love_result += double_complex(-coef, 0.0) * left_pad * cudaq::spin::x(i) * right_pad;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::x(i);
+        seeley_richard_love_result += -imag_i * coef * left_pad * cudaq::spin::y(i);
+        seeley_richard_love_result +=  imag_i * coef * left_pad * cudaq::spin::y(i) * right_pad;
+        seeley_richard_love_result +=          -coef * left_pad * cudaq::spin::x(i) * right_pad;
     }
 
     // Case 7
@@ -372,15 +373,15 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
 
         double_complex c0, c1, c2, c3;
         if (i < j) {
-            c0 = double_complex(  0.0, -coef);
-            c1 = double_complex( coef, 0.0);
-            c2 = double_complex(-coef, 0.0);
-            c3 = double_complex(  0.0, -coef);
+            c0 = -imag_i * coef;
+            c1 =           coef;
+            c2 =          -coef;
+            c0 = -imag_i * coef;
         } else {
-            c0 = double_complex(-coef, 0.0);
-            c1 = double_complex(  0.0, -coef);
-            c2 = double_complex(  0.0,  coef);
-            c3 = double_complex(-coef, 0.0);
+            c0 =          -coef;
+            c1 = -imag_i * coef;
+            c1 =  imag_i * coef;
+            c3 =          -coef;
         }
 
         seeley_richard_love_result += c0 * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1;
@@ -414,10 +415,10 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_4 *= cudaq::spin::z(index);
         }
 
-        seeley_richard_love_result += double_complex(  0.0, -coef) * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
-        seeley_richard_love_result += double_complex( coef, 0.0)   * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_2;
-        seeley_richard_love_result += double_complex( coef, 0.0)   * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_3;
-        seeley_richard_love_result += double_complex(  0.0,  coef) * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_4;
+        seeley_richard_love_result += -imag_i * coef * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_2;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_3;
+        seeley_richard_love_result +=  imag_i * coef * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_4;
     }
 
     // Case 9
@@ -471,10 +472,10 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_4 *= cudaq::spin::z(index);
         }
 
-        seeley_richard_love_result += double_complex(-coef, 0.0)   * left_pad_1 * cudaq::spin::y(i) * right_pad_1;
-        seeley_richard_love_result += double_complex(  0.0, -coef) * left_pad_2 * right_pad_2;
-        seeley_richard_love_result += double_complex(-coef, 0.0)   * left_pad_3 * cudaq::spin::x(i) * right_pad_3;
-        seeley_richard_love_result += double_complex(  0.0,  coef) * left_pad_3 * cudaq::spin::y(i) * right_pad_4;
+        seeley_richard_love_result +=          -coef * left_pad_1 * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result += -imag_i * coef * left_pad_2 * right_pad_2;
+        seeley_richard_love_result +=          -coef * left_pad_3 * cudaq::spin::x(i) * right_pad_3;
+        seeley_richard_love_result +=  imag_i * coef * left_pad_3 * cudaq::spin::y(i) * right_pad_4;
     }
 
     // Case 10
@@ -501,10 +502,10 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_4 *= cudaq::spin::z(index);
         }
 
-        seeley_richard_love_result += double_complex(  0.0, -coef) * left_pad * cudaq::spin::y(i) * right_pad_1;
-        seeley_richard_love_result += double_complex( coef, 0.0)   * left_pad * cudaq::spin::x(i) * right_pad_2;
-        seeley_richard_love_result += double_complex(-coef, 0.0)   * left_pad * cudaq::spin::z(j) * cudaq::spin::x(i) * right_pad_3;
-        seeley_richard_love_result += double_complex(  0.0,  coef) * left_pad * cudaq::spin::z(j) * cudaq::spin::y(i) * right_pad_4;
+        seeley_richard_love_result += -imag_i * coef * left_pad * cudaq::spin::y(i) * right_pad_1;
+        seeley_richard_love_result +=           coef * left_pad * cudaq::spin::x(i) * right_pad_2;
+        seeley_richard_love_result +=          -coef * left_pad * cudaq::spin::z(j) * cudaq::spin::x(i) * right_pad_3;
+        seeley_richard_love_result +=  imag_i * coef * left_pad * cudaq::spin::z(j) * cudaq::spin::y(i) * right_pad_4;
     }
     else {
         std::cout << "uh oh\n";
@@ -525,7 +526,7 @@ cudaq::spin_op generate(const double constant,
         }
         for (std::size_t q = 0; q < p; q++) {
             if (std::abs(hpq.at({p,q})) > 0.0) {
-                bk_hamiltonian += seeley_richard_love(p, q, hpq.at({p,q}), nqubits); 
+                bk_hamiltonian += seeley_richard_love(p, q, std::conj(hpq.at({p,q})), nqubits); 
             }
         }
     }
