@@ -5,6 +5,7 @@
 #include <iterator>
 
 #include "spin_op.h"
+#include "tensor.h"
 
 template<typename T>
 std::set<T> set_difference(const std::set<T>& set1, const std::set<T>& set2) {
@@ -131,13 +132,7 @@ std::set<std::size_t> P0_ij_diff_a_set(std::size_t i, std::size_t j, std::size_t
     return set_symmetric_difference(P0_ij_set(i, j), alpha_set(i, j, n_qubits));
 }
 
-/**
- * Algebraic expressions for general products of the form a_i^d a_j term in
- * the Bravyi-Kitaev basis. These expressions vary in form depending on the
- * parity of the indices i and j, as well as on the overlaps between the parity
- * and update sets of the indices
- */
-cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, double coef, int n_qubits) {
+cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<double> coef, int n_qubits) {
 
     using double_complex = std::complex<double>;
 
@@ -511,8 +506,30 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, double coef, in
         seeley_richard_love_result += double_complex(-coef, 0.0)   * left_pad * cudaq::spin::z(j) * cudaq::spin::x(i) * right_pad_3;
         seeley_richard_love_result += double_complex(  0.0,  coef) * left_pad * cudaq::spin::z(j) * cudaq::spin::y(i) * right_pad_4;
     }
+    else {
+        std::cout << "uh oh\n";
+    }
 
     return seeley_richard_love_result;
+}
+
+cudaq::spin_op generate(const double constant,
+                        const cudaqx::tensor<> &hpq,
+                        const cudaqx::tensor<> &hpqrs) {
+
+    auto nqubits = hpq.shape()[0];
+    cudaq::spin_op bk_hamiltonian = 0;
+    for (std::size_t p = 0; p < nqubits; p++) {
+        if (std::abs(hpq.at({p,p})) > 0.0) {
+            bk_hamiltonian += seeley_richard_love(p, p, hpq.at({p,p}), nqubits); 
+        }
+        for (std::size_t q = 0; q < p; q++) {
+            if (std::abs(hpq.at({p,q})) > 0.0) {
+                bk_hamiltonian += seeley_richard_love(p, q, hpq.at({p,q}), nqubits); 
+            }
+        }
+    }
+    return bk_hamiltonian;
 }
 
 int main() {
@@ -521,7 +538,18 @@ int main() {
     cudaq::spin_op identity;
     op += cudaq::spin::x(4)*cudaq::spin::z(5);
     op -= identity;
-    // seeley_richard_love(1, 1, 2.5, n_qubits);
+    {
+        n_qubits = 20;
+        for (std::size_t i = 0; i < n_qubits; i++) {
+            for (std::size_t j = 0; j < n_qubits; j++) {
+                auto result = seeley_richard_love(i, j, 4.0, n_qubits);
+                std::cout << "i: " << i << "  j: " << j << "\n";
+                result.dump();
+     
+            }
+        }
+    }
+#if 0
     {
         auto result = seeley_richard_love(2, 2, 4.0, n_qubits);
         result.dump();
@@ -577,6 +605,7 @@ int main() {
         result.dump();
         std::cout << "\n";
     }
+#endif
     return 0;
 }
 
