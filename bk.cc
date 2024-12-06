@@ -514,6 +514,27 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
     return seeley_richard_love_result;
 }
 
+cudaq::spin_op hermitian_one_body_product(std::size_t a, 
+                                          std::size_t b, 
+                                          std::size_t c, 
+                                          std::size_t d, 
+                                          std::complex<double> coef, 
+                                          std::size_t nqubits) {
+
+    cudaq::spin_op c_dag_c_ac = seeley_richard_love(a, c, coef, nqubits);
+    cudaq::spin_op c_dag_c_bd = seeley_richard_love(b, d, 1, nqubits);
+    c_dag_c_ac *= c_dag_c_bd;
+
+    cudaq::spin_op hermitian_sum = c_dag_c_ac;
+
+    cudaq::spin_op c_dag_c_ca = seeley_richard_love(c, a, std::conj(coef), nqubits);
+    cudaq::spin_op c_dag_c_db = seeley_richard_love(d, b, 1, nqubits);
+    c_dag_c_ca *= c_dag_c_db;
+
+    hermitian_sum += c_dag_c_ca;
+    return hermitian_sum;
+}
+
 std::complex<double> two_body_coef(const cudaqx::tensor<> &hpqrs, 
                                    std::size_t p,
                                    std::size_t q,
@@ -552,6 +573,9 @@ cudaq::spin_op generate(const double constant,
                 for (auto index : F_ij_set(p, q)) {
                     zs3 += cudaq::spin::z(index);
                 }
+                bk_hamiltonian += -coef * zs;
+                bk_hamiltonian += -coef * zs2;
+                bk_hamiltonian +=  coef * zs3;
                 // TODO: question about this:
                 // constant_term is a double but += will cast it to a std::complex<>
                 // 
@@ -576,26 +600,26 @@ cudaq::spin_op generate(const double constant,
         }
     }
 
-    // for (std::size_t p = 0; p < nqubits; p++) {
-    //     for (std::size_t q = 0; q < p; q++) {
-    //         for (std::size_t r = 0; r < q; r++) {
-    //             for (std::size_t s = 0; s < r; s++) {
-    //                 auto coef_pqrs = -two_body_coef(hpqrs, p, q, r, s);
-    //                 if (std::abs(coef_pqrs) > 0.0) {
-    //                     bk_hamiltonian +=  hermitian_one_body_product(p, q, r, s, coef_pqrs, nqubits);
-    //                 }
-    //                 auto coef_prqs = -two_body_coef(hpqrs, p, r, q, s);
-    //                 if (std::abs(coef_prqs) > 0.0) {
-    //                     bk_hamiltonian +=  hermitian_one_body_product(p, r, q, s, coef_prqs, nqubits);
-    //                 }
-    //                 auto coef_psqr = -two_body_coef(hpqrs, p, s, q, r);
-    //                 if (std::abs(coef_psqr) > 0.0) {
-    //                     bk_hamiltonian +=  hermitian_one_body_product(p, s, q, r, coef_psqr, nqubits);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    for (std::size_t p = 0; p < nqubits; p++) {
+        for (std::size_t q = 0; q < p; q++) {
+            for (std::size_t r = 0; r < q; r++) {
+                for (std::size_t s = 0; s < r; s++) {
+                    auto coef_pqrs = -two_body_coef(hpqrs, p, q, r, s);
+                    if (std::abs(coef_pqrs) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, q, r, s, coef_pqrs, nqubits);
+                    }
+                    auto coef_prqs = -two_body_coef(hpqrs, p, r, q, s);
+                    if (std::abs(coef_prqs) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, r, q, s, coef_prqs, nqubits);
+                    }
+                    auto coef_psqr = -two_body_coef(hpqrs, p, s, q, r);
+                    if (std::abs(coef_psqr) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, s, q, r, coef_psqr, nqubits);
+                    }
+                }
+            }
+        }
+    }
 
     return bk_hamiltonian;
 }
@@ -712,8 +736,12 @@ void test2() {
     std::transform(two_body.begin(), two_body.end(), two_body_cmplx.begin(), 
         [] (auto x) {return double_complex(x);});
     cudaqx::tensor<> hpq({2, 2});
-    //hpq.copy(one_body_cmplx.data());
-    //cudaqx::tensor<> hpqrs(two_body_cmplx.data(), {2, 2, 2, 2});
+    cudaqx::tensor<> hpqrs({2, 2, 2, 2});
+    hpq.copy(one_body_cmplx.data());
+    hpqrs.copy(two_body_cmplx.data());
+
+    cudaq::spin_op bk_hamiltonian = generate(0.0, hpq, hpqrs);
+    bk_hamiltonian.dump();
 }
 
 int main() {
