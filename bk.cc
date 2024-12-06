@@ -576,48 +576,32 @@ cudaq::spin_op generate(const double constant,
         }
     }
 
-    for (std::size_t p = 0; p < nqubits; p++) {
-        for (std::size_t q = 0; q < p; q++) {
-            for (std::size_t r = 0; r < q; r++) {
-                for (std::size_t s = 0; s < r; s++) {
-                    auto coef_pqrs = -two_body_coef(hpqrs, p, q, r, s);
-                    if (std::abs(coef_pqrs) > 0.0) {
-                        bk_hamiltonian +=  hermitian_one_body_product(p, q, r, s, coef_pqrs, nqubits);
-                    }
-                    auto coef_prqs = -two_body_coef(hpqrs, p, r, q, s);
-                    if (std::abs(coef_prqs) > 0.0) {
-                        bk_hamiltonian +=  hermitian_one_body_product(p, r, q, s, coef_prqs, nqubits);
-                    }
-                    auto coef_psqr = -two_body_coef(hpqrs, p, s, q, r);
-                    if (std::abs(coef_psqr) > 0.0) {
-                        bk_hamiltonian +=  hermitian_one_body_product(p, s, q, r, coef_psqr, nqubits);
-                    }
-                }
-            }
-        }
-    }
+    // for (std::size_t p = 0; p < nqubits; p++) {
+    //     for (std::size_t q = 0; q < p; q++) {
+    //         for (std::size_t r = 0; r < q; r++) {
+    //             for (std::size_t s = 0; s < r; s++) {
+    //                 auto coef_pqrs = -two_body_coef(hpqrs, p, q, r, s);
+    //                 if (std::abs(coef_pqrs) > 0.0) {
+    //                     bk_hamiltonian +=  hermitian_one_body_product(p, q, r, s, coef_pqrs, nqubits);
+    //                 }
+    //                 auto coef_prqs = -two_body_coef(hpqrs, p, r, q, s);
+    //                 if (std::abs(coef_prqs) > 0.0) {
+    //                     bk_hamiltonian +=  hermitian_one_body_product(p, r, q, s, coef_prqs, nqubits);
+    //                 }
+    //                 auto coef_psqr = -two_body_coef(hpqrs, p, s, q, r);
+    //                 if (std::abs(coef_psqr) > 0.0) {
+    //                     bk_hamiltonian +=  hermitian_one_body_product(p, s, q, r, coef_psqr, nqubits);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     return bk_hamiltonian;
 }
 
-int main() {
+void test0() {
     int n_qubits = 6;
-    cudaq::spin_op op;
-    cudaq::spin_op identity;
-    op += cudaq::spin::x(4)*cudaq::spin::z(5);
-    op -= identity;
-    {
-        n_qubits = 20;
-        for (std::size_t i = 0; i < n_qubits; i++) {
-            for (std::size_t j = 0; j < n_qubits; j++) {
-                auto result = seeley_richard_love(i, j, 4.0, n_qubits);
-                std::cout << "i: " << i << "  j: " << j << "\n";
-                result.dump();
-     
-            }
-        }
-    }
-#if 0
     {
         auto result = seeley_richard_love(2, 2, 4.0, n_qubits);
         result.dump();
@@ -673,7 +657,65 @@ int main() {
         result.dump();
         std::cout << "\n";
     }
-#endif
-    return 0;
 }
 
+void test1() {
+    int n_qubits = 6;
+    cudaq::spin_op op;
+    cudaq::spin_op identity;
+    op += cudaq::spin::x(4)*cudaq::spin::z(5);
+    op -= identity;
+    {
+        n_qubits = 20;
+        for (std::size_t i = 0; i < n_qubits; i++) {
+            for (std::size_t j = 0; j < n_qubits; j++) {
+                auto result = seeley_richard_love(i, j, 4.0, n_qubits);
+                std::cout << "i: " << i << "  j: " << j << "\n";
+                result.dump();
+            }
+        }
+    }
+}
+
+void test2() {
+    using double_complex = std::complex<double>;
+    std::vector<double> one_body = {
+        -1.2488468037963392,
+        -2.691771247900193e-16,
+        -1.778874117295775e-16
+        -0.4796778131338564
+    };
+
+    std::vector<double> two_body = {
+        0.6733439450064828,
+        7.407181480130312e-18,
+        -9.806645760784106e-19,
+        0.181625331476565,
+        -9.806645760784106e-19,
+        0.181625331476565,
+        0.6624272943269702,
+        2.703027800537125e-16,
+        7.407181480130312e-18,
+        0.6624272943269701,
+        0.181625331476565,
+        -9.799198280431977e-17,
+        0.181625331476565,
+        -9.799198280431977e-17,
+        2.703027800537125e-16,
+        0.6962915699872091
+    };
+
+    std::vector<double_complex> one_body_cmplx(one_body.size());
+    std::vector<double_complex> two_body_cmplx(two_body.size());
+    std::transform(one_body.begin(), one_body.end(), one_body_cmplx.begin(), 
+        [] (auto x) {return double_complex(x);});
+    std::transform(two_body.begin(), two_body.end(), two_body_cmplx.begin(), 
+        [] (auto x) {return double_complex(x);});
+    cudaqx::tensor<> hpq({2, 2});
+    //hpq.copy(one_body_cmplx.data());
+    //cudaqx::tensor<> hpqrs(two_body_cmplx.data(), {2, 2, 2, 2});
+}
+
+int main() {
+    test2();
+}
