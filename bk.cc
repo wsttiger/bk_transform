@@ -514,22 +514,89 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
     return seeley_richard_love_result;
 }
 
+std::complex<double> two_body_coef(const cudaqx::tensor<> &hpqrs, 
+                                   std::size_t p,
+                                   std::size_t q,
+                                   std::size_t r,
+                                   std::size_t s) {
+    return hpqrs.at({p, q, r, s}) - hpqrs.at({q, p, r, s}) - hpqrs.at({p, q, s, r}) + hpqrs.at({q, p, s, r});
+}
+
 cudaq::spin_op generate(const double constant,
                         const cudaqx::tensor<> &hpq,
                         const cudaqx::tensor<> &hpqrs) {
 
     auto nqubits = hpq.shape()[0];
     cudaq::spin_op bk_hamiltonian = 0;
+    double constant_term = constant;
     for (std::size_t p = 0; p < nqubits; p++) {
         if (std::abs(hpq.at({p,p})) > 0.0) {
             bk_hamiltonian += seeley_richard_love(p, p, hpq.at({p,p}), nqubits); 
         }
         for (std::size_t q = 0; q < p; q++) {
             if (std::abs(hpq.at({p,q})) > 0.0) {
-                bk_hamiltonian += seeley_richard_love(p, q, std::conj(hpq.at({p,q})), nqubits); 
+                bk_hamiltonian += seeley_richard_love(p, q,           hpq.at({p,q} ), nqubits); 
+                bk_hamiltonian += seeley_richard_love(q, p, std::conj(hpq.at({p,q})), nqubits); 
+            }
+            auto coef = 0.25 * two_body_coef(hpqrs, p, q, q, p);
+            if (std::abs(coef) > 0.0) {
+                cudaq::spin_op zs;
+                for (auto index : occupation_set(p)) {
+                    zs += cudaq::spin::z(index);
+                }
+                cudaq::spin_op zs2;
+                for (auto index : occupation_set(q)) {
+                    zs2 += cudaq::spin::z(index);
+                }
+                cudaq::spin_op zs3;
+                for (auto index : F_ij_set(p, q)) {
+                    zs3 += cudaq::spin::z(index);
+                }
+                // TODO: question about this:
+                // constant_term is a double but += will cast it to a std::complex<>
+                // 
+                // constant_term += coef;
+                constant_term += std::real(coef);
             }
         }
     }
+
+    for (std::size_t p = 0; p < nqubits; p++) {
+        for (std::size_t q = 0; q < nqubits; q++) {
+            for (std::size_t r = 0; r < q; r++) {
+                if ((p != q) and (p != r)) {
+                    auto coef = two_body_coef(hpqrs, p, q, r, p);
+                    if (std::abs(coef) > 0.0) {
+                        cudaq::spin_op excitation = seeley_richard_love(q, r, coef, nqubits);
+                        cudaq::spin_op number = seeley_richard_love(p, p, 1.0, nqubits);
+                        bk_hamiltonian += number * excitation;
+                    }
+                }
+            }
+        }
+    }
+
+    for (std::size_t p = 0; p < nqubits; p++) {
+        for (std::size_t q = 0; q < p; q++) {
+            for (std::size_t r = 0; r < q; r++) {
+                for (std::size_t s = 0; s < r; s++) {
+                    auto coef_pqrs = -two_body_coef(hpqrs, p, q, r, s);
+                    if (std::abs(coef_pqrs) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, q, r, s, coef_pqrs, nqubits);
+                    }
+                    auto coef_prqs = -two_body_coef(hpqrs, p, r, q, s);
+                    if (std::abs(coef_prqs) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, r, q, s, coef_prqs, nqubits);
+                    }
+                    auto coef_psqr = -two_body_coef(hpqrs, p, s, q, r);
+                    if (std::abs(coef_psqr) > 0.0) {
+                        bk_hamiltonian +=  hermitian_one_body_product(p, s, q, r, coef_psqr, nqubits);
+                    }
+                }
+            }
+        }
+    }
+
     return bk_hamiltonian;
 }
 
