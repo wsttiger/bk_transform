@@ -7,6 +7,13 @@
 #include "spin_op.h"
 #include "tensor.h"
 
+void print_set(const std::set<std::size_t>& s) {
+    std::cout << "[";
+    std::copy(s.begin(), s.end(), 
+        std::ostream_iterator<std::size_t>(std::cout, ", "));
+    std::cout << "\b\b]"; // backspace over last comma and space
+}
+
 template<typename T>
 std::set<T> set_difference(const std::set<T>& set1, const std::set<T>& set2) {
     std::set<T> result;
@@ -139,7 +146,8 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
 
     coef *= 0.25;
 
-    cudaq::spin_op seeley_richard_love_result = 0;
+    cudaq::spin_op seeley_richard_love_result = 0.0 * cudaq::spin::i(0);
+
     // Case 0
     if (i == j) {
         std::cout << "Case 0\n";
@@ -223,6 +231,15 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             c2 =  imag_i * coef;
             c3 =          -coef;
         }
+
+        seeley_richard_love_result.dump();
+        std::cout << "\n";
+        left_pad.dump();
+        std::cout << "\n";
+        right_pad_1.dump();
+        std::cout << "\n";
+        right_pad_2.dump();
+        std::cout << "\n";
 
         seeley_richard_love_result += c0 * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_1;
         seeley_richard_love_result += c1 * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1;
@@ -371,16 +388,21 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_4 *= cudaq::spin::z(index);
         }
 
+        // print_set(set_difference(P0_ij_set(i, j), alpha_set(i, j, n_qubits)));
+        // print_set(set_difference(P1_ij_set(i, j), alpha_set(i, j, n_qubits)));
+        // print_set(set_difference(P2_ij_set(i, j), alpha_set(i, j, n_qubits)));
+        // print_set(set_difference(P3_ij_set(i, j), alpha_set(i, j, n_qubits)));
+
         double_complex c0, c1, c2, c3;
         if (i < j) {
             c0 = -imag_i * coef;
             c1 =           coef;
             c2 =          -coef;
-            c0 = -imag_i * coef;
+            c3 = -imag_i * coef;
         } else {
             c0 =          -coef;
             c1 = -imag_i * coef;
-            c1 =  imag_i * coef;
+            c2 =  imag_i * coef;
             c3 =          -coef;
         }
 
@@ -388,6 +410,23 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
         seeley_richard_love_result += c1 * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2;
         seeley_richard_love_result += c2 * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_3;
         seeley_richard_love_result += c3 * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_4;
+
+        (left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1).dump();
+        (left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2).dump();
+        (left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_3).dump();
+        (left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_4).dump();
+        // seeley_richard_love_result.dump();
+        std::cout << "\n";
+        left_pad.dump();
+        std::cout << "\n";
+        right_pad_1.dump();
+        std::cout << "\n";
+        right_pad_2.dump();
+        std::cout << "\n";
+        right_pad_3.dump();
+        std::cout << "\n";
+        right_pad_4.dump();
+        std::cout << "\n";
     }
 
     // Case 8
@@ -744,6 +783,122 @@ void test2() {
     bk_hamiltonian.dump();
 }
 
+void test3() {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+    {
+        // Case 0
+        auto result = seeley_richard_love(2, 2, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex(-2.0, 0.0) * i(0)*i(1)*z(2)
+            + double_complex( 2.0, 0.0) * i(0)*i(1)*i(2);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 1
+        auto result = seeley_richard_love(2, 6, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 1.0, 0.0) * i(0)*z(1)*x(2)*y(3)*i(4)*z(5)*y(6)
+            + double_complex(-1.0, 0.0) * i(0)*z(1)*y(2)*y(3)*i(4)*z(5)*x(6)
+            + double_complex( 0.0,-1.0) * i(0)*z(1)*x(2)*y(3)*i(4)*z(5)*x(6)
+            + double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*y(3)*i(4)*z(5)*y(6);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 2
+        auto result = seeley_richard_love(5, 2, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*z(3)*z(4)*x(5)
+            + double_complex(-1.0, 0.0) * i(0)*z(1)*x(2)*z(3)*z(4)*x(5)
+            + double_complex( 0.0, 1.0) * i(0)*z(1)*x(2)*z(3)*i(4)*y(5)
+            + double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*z(3)*i(4)*y(5);
+        auto d = gold - result;
+        result.dump();
+        std::cout << "\n";
+        gold.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 3
+        auto result = seeley_richard_love(1, 2, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 1.0, 0.0) * z(0)*y(1)*y(2)
+            + double_complex( 0.0,-1.0) * z(0)*y(1)*x(2)
+            + double_complex( 1.0, 0.0) * i(0)*x(1)*x(2)
+            + double_complex( 0.0, 1.0) * i(0)*x(1)*y(2);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 4
+        auto result = seeley_richard_love(0, 5, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex(-1.0, 0.0) * y(0)*x(1)*i(2)*y(3)*z(4)*x(5)
+            + double_complex( 0.0,-1.0) * x(0)*x(1)*i(2)*y(3)*z(4)*x(5)
+            + double_complex( 1.0, 0.0) * x(0)*x(1)*i(2)*y(3)*i(4)*y(5)
+            + double_complex( 0.0,-1.0) * y(0)*x(1)*i(2)*y(3)*i(4)*y(5);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 6
+        auto result = seeley_richard_love(18, 19, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 1.0, 0.0) * x(18)*i(19)
+            + double_complex( 0.0,-1.0) * y(18)*i(19)
+            + double_complex( 0.0, 1.0) * z(17)*y(18)*z(19)
+            + double_complex(-1.0, 0.0) * z(17)*x(18)*z(19);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 7
+        auto result = seeley_richard_love(17, 3, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex(-1.0, 0.0) * z(1)*z(2)*x(3)*x(7)*z(15)*z(16)*x(17)*x(19)
+            + double_complex( 0.0,-1.0) * y(3)*x(7)*z(15)*z(16)*x(17)*i(18)*x(19) 
+            + double_complex( 0.0, 1.0) * z(1)*z(2)*x(3)*x(7)*z(15)*y(17)*x(19)
+            + double_complex(-1.0, 0.0) * y(3)*x(7)*z(15)*y(17)*x(19);
+        auto d = gold - result;
+        result.dump();
+        std::cout << "\n";
+        gold.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 7
+        auto result = seeley_richard_love(1, 5, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 0.0,-1.0) * z(0)*x(1)*i(2)*y(3)*z(4)*x(5)
+            + double_complex( 1.0, 0.0) * z(0)*x(1)*i(2)*y(3)*i(4)*y(5)
+            + double_complex(-1.0, 0.0) * i(0)*y(1)*i(2)*y(3)*z(4)*x(5)
+            + double_complex( 0.0,-1.0) * i(0)*y(1)*i(2)*y(3)*i(4)*y(5);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 8
+        auto result = seeley_richard_love(7, 9, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 0.0,-1.0) * z(3)*i(4)*z(5)*z(6)*y(7)*z(8)*x(9)*i(10)*x(11)
+            + double_complex( 1.0, 0.0) * z(3)*i(4)*z(5)*z(6)*y(7)*i(8)*y(9)*i(10)*x(11)
+            + double_complex( 1.0, 0.0) * x(7)*z(8)*x(9)*i(10)*x(11)
+            + double_complex( 0.0, 1.0) * x(7)*i(8)*y(9)*i(10)*x(11);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+}
+
 int main() {
-    test2();
+    test3();
 }
