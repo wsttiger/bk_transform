@@ -8,10 +8,14 @@
 #include "tensor.h"
 
 void print_set(const std::set<std::size_t>& s) {
+    if (s.empty()) {
+        std::cout << "[]\n";
+        return;
+    }
     std::cout << "[";
     std::copy(s.begin(), s.end(), 
         std::ostream_iterator<std::size_t>(std::cout, ", "));
-    std::cout << "\b\b]"; // backspace over last comma and space
+    std::cout << "\b\b]\n"; // backspace over last comma and space
 }
 
 template<typename T>
@@ -232,15 +236,6 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             c3 =          -coef;
         }
 
-        seeley_richard_love_result.dump();
-        std::cout << "\n";
-        left_pad.dump();
-        std::cout << "\n";
-        right_pad_1.dump();
-        std::cout << "\n";
-        right_pad_2.dump();
-        std::cout << "\n";
-
         seeley_richard_love_result += c0 * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_1;
         seeley_richard_love_result += c1 * left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1;
         seeley_richard_love_result += c2 * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_2;
@@ -388,11 +383,6 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
             right_pad_4 *= cudaq::spin::z(index);
         }
 
-        // print_set(set_difference(P0_ij_set(i, j), alpha_set(i, j, n_qubits)));
-        // print_set(set_difference(P1_ij_set(i, j), alpha_set(i, j, n_qubits)));
-        // print_set(set_difference(P2_ij_set(i, j), alpha_set(i, j, n_qubits)));
-        // print_set(set_difference(P3_ij_set(i, j), alpha_set(i, j, n_qubits)));
-
         double_complex c0, c1, c2, c3;
         if (i < j) {
             c0 = -imag_i * coef;
@@ -410,23 +400,6 @@ cudaq::spin_op seeley_richard_love(std::size_t i, std::size_t j, std::complex<do
         seeley_richard_love_result += c1 * left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2;
         seeley_richard_love_result += c2 * left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_3;
         seeley_richard_love_result += c3 * left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_4;
-
-        (left_pad * cudaq::spin::x(j) * cudaq::spin::x(i) * right_pad_1).dump();
-        (left_pad * cudaq::spin::y(j) * cudaq::spin::x(i) * right_pad_2).dump();
-        (left_pad * cudaq::spin::x(j) * cudaq::spin::y(i) * right_pad_3).dump();
-        (left_pad * cudaq::spin::y(j) * cudaq::spin::y(i) * right_pad_4).dump();
-        // seeley_richard_love_result.dump();
-        std::cout << "\n";
-        left_pad.dump();
-        std::cout << "\n";
-        right_pad_1.dump();
-        std::cout << "\n";
-        right_pad_2.dump();
-        std::cout << "\n";
-        right_pad_3.dump();
-        std::cout << "\n";
-        right_pad_4.dump();
-        std::cout << "\n";
     }
 
     // Case 8
@@ -779,8 +752,11 @@ void test2() {
     hpq.copy(one_body_cmplx.data());
     hpqrs.copy(two_body_cmplx.data());
 
-    cudaq::spin_op bk_hamiltonian = generate(0.0, hpq, hpqrs);
-    bk_hamiltonian.dump();
+    hpq.at({1,1}) = double_complex(.012316, 0.123456);
+    std::cout << hpq.at({1,1}) << std::endl;
+
+    // cudaq::spin_op bk_hamiltonian = generate(0.0, hpq, hpqrs);
+    // bk_hamiltonian.dump();
 }
 
 void test3() {
@@ -813,14 +789,12 @@ void test3() {
         // Case 2
         auto result = seeley_richard_love(5, 2, 4.0, 20);
         cudaq::spin_op gold = 
-              double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*z(3)*z(4)*x(5)
-            + double_complex(-1.0, 0.0) * i(0)*z(1)*x(2)*z(3)*z(4)*x(5)
-            + double_complex( 0.0, 1.0) * i(0)*z(1)*x(2)*z(3)*i(4)*y(5)
-            + double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*z(3)*i(4)*y(5);
+              double_complex(-1.0, 0.0) * z(1)*y(2)*y(3)*z(4)*x(5)
+            + double_complex( 0.0, 1.0) * z(1)*x(2)*y(3)*z(4)*x(5)
+            + double_complex( 1.0, 0.0) * z(1)*x(2)*y(3)*y(5)
+            + double_complex( 0.0, 1.0) * z(1)*y(2)*y(3)*y(5);
         auto d = gold - result;
-        result.dump();
-        std::cout << "\n";
-        gold.dump();
+        d.dump();
         std::cout << "\n";
     }
     {
@@ -863,24 +837,35 @@ void test3() {
         // Case 7
         auto result = seeley_richard_love(17, 3, 4.0, 20);
         cudaq::spin_op gold = 
-              double_complex(-1.0, 0.0) * z(1)*z(2)*x(3)*x(7)*z(15)*z(16)*x(17)*x(19)
-            + double_complex( 0.0,-1.0) * y(3)*x(7)*z(15)*z(16)*x(17)*i(18)*x(19) 
-            + double_complex( 0.0, 1.0) * z(1)*z(2)*x(3)*x(7)*z(15)*y(17)*x(19)
-            + double_complex(-1.0, 0.0) * y(3)*x(7)*z(15)*y(17)*x(19);
+              double_complex( 0.0, 1.0) * z(1)*z(2)*x(3)*x(7)*y(15)*z(16)*x(17)*x(19) 
+            + double_complex(-1.0, 0.0) * y(3)*x(7)*y(15)*z(16)*x(17)*x(19) 
+            + double_complex( 1.0, 0.0) * z(1)*z(2)*x(3)*x(7)*y(15)*y(17)*x(19)
+            + double_complex( 0.0, 1.0) * y(3)*x(7)*y(15)*y(17)*x(19);
         auto d = gold - result;
-        result.dump();
-        std::cout << "\n";
-        gold.dump();
+        d.dump();
         std::cout << "\n";
     }
     {
         // Case 7
         auto result = seeley_richard_love(1, 5, 4.0, 20);
         cudaq::spin_op gold = 
-              double_complex( 0.0,-1.0) * z(0)*x(1)*i(2)*y(3)*z(4)*x(5)
-            + double_complex( 1.0, 0.0) * z(0)*x(1)*i(2)*y(3)*i(4)*y(5)
-            + double_complex(-1.0, 0.0) * i(0)*y(1)*i(2)*y(3)*z(4)*x(5)
-            + double_complex( 0.0,-1.0) * i(0)*y(1)*i(2)*y(3)*i(4)*y(5);
+              double_complex( 0.0,-1.0) * z(0)*x(1)*y(3)*z(4)*x(5) 
+            + double_complex( 1.0, 0.0) * z(0)*x(1)*y(3)*y(5)
+            + double_complex(-1.0, 0.0) * y(1)*y(3)*z(4)*x(5)
+            + double_complex( 0.0,-1.0) * y(1)*y(3)*y(5);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 7
+        auto result = seeley_richard_love(11, 5, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex( 0.0, 1.0) * z(3)*z(4)*x(5)*y(7)*z(9)*z(10)*x(11)
+            + double_complex(-1.0, 0.0) * z(3)*y(5)*y(7)*z(9)*z(10)*x(11)
+            + double_complex( 1.0, 0.0) * z(3)*z(4)*x(5)*y(7)*y(11)
+            + double_complex( 0.0, 1.0) * z(3)*y(5)*y(7)*y(11);
+
         auto d = gold - result;
         d.dump();
         std::cout << "\n";
@@ -889,10 +874,34 @@ void test3() {
         // Case 8
         auto result = seeley_richard_love(7, 9, 4.0, 20);
         cudaq::spin_op gold = 
-              double_complex( 0.0,-1.0) * z(3)*i(4)*z(5)*z(6)*y(7)*z(8)*x(9)*i(10)*x(11)
-            + double_complex( 1.0, 0.0) * z(3)*i(4)*z(5)*z(6)*y(7)*i(8)*y(9)*i(10)*x(11)
-            + double_complex( 1.0, 0.0) * x(7)*z(8)*x(9)*i(10)*x(11)
-            + double_complex( 0.0, 1.0) * x(7)*i(8)*y(9)*i(10)*x(11);
+              double_complex( 0.0,-1.0) * z(3)*z(5)*z(6)*y(7)*z(8)*x(9)*x(11)
+            + double_complex( 1.0, 0.0) * z(3)*z(5)*z(6)*y(7)*y(9)*x(11)
+            + double_complex( 1.0, 0.0) * x(7)*z(8)*x(9)*x(11)
+            + double_complex( 0.0, 1.0) * x(7)*y(9)*x(11);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 9
+        auto result = seeley_richard_love(9, 15, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex(-1.0, 0.0) * y(9)*y(11)*z(13)*z(14)
+            + double_complex( 0.0,-1.0) * z(8)*x(9)*y(11)*z(13)*z(14)
+            + double_complex(-1.0, 0.0) * z(7)*z(8)*x(9)*x(11)*z(15)
+            + double_complex( 0.0, 1.0) * z(7)*y(9)*x(11)*z(15);
+        auto d = gold - result;
+        d.dump();
+        std::cout << "\n";
+    }
+    {
+        // Case 10
+        auto result = seeley_richard_love(9, 15, 4.0, 20);
+        cudaq::spin_op gold = 
+              double_complex(-1.0, 0.0) * y(9)*y(11)*z(13)*z(14) 
+            + double_complex( 0.0,-1.0) * z(8)*x(9)*y(11)*z(13)*z(14)
+            + double_complex(-1.0, 0.0) * z(7)*z(8)*x(9)*x(11)*z(15)
+            + double_complex( 0.0, 1.0) * z(7)*y(9)*x(11)*z(15);
         auto d = gold - result;
         d.dump();
         std::cout << "\n";
@@ -900,5 +909,5 @@ void test3() {
 }
 
 int main() {
-    test3();
+    test2();
 }
