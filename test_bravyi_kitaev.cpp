@@ -10,7 +10,7 @@
 
 #include <gtest/gtest.h>
 
-void test2() {
+TEST(BravyiKitaev, testH2Hamiltonian) {
     using namespace cudaq;
     using namespace spin;
     using double_complex = std::complex<double>;
@@ -74,9 +74,8 @@ void test2() {
          - 0.22004130022421792  * z(1) * z(2) * z(3)
          + 0.17407289249680227  * z(1) * z(3)
          - 0.22004130022421792 * z(2);
-    auto d = gold - result;
-    d.dump();
-    std::cout << "\n";
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
 }
 
 TEST(BravyiKitaev, testSRLCase0) {
@@ -109,153 +108,132 @@ TEST(BravyiKitaev, testSRLCase1) {
     for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
 }
 
-void test3() {
+TEST(BravyiKitaev, testSRLCase2) {
     using double_complex = std::complex<double>;
     using namespace cudaq;
     using namespace spin;
-    {
-        // Case 0
-        auto result = cudaq::solvers::seeley_richard_love(2, 2, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex(-2.0, 0.0) * i(0)*i(1)*z(2)
-            + double_complex( 2.0, 0.0) * i(0)*i(1)*i(2);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 1
-        auto result = cudaq::solvers::seeley_richard_love(2, 6, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 1.0, 0.0) * i(0)*z(1)*x(2)*y(3)*i(4)*z(5)*y(6)
-            + double_complex(-1.0, 0.0) * i(0)*z(1)*y(2)*y(3)*i(4)*z(5)*x(6)
-            + double_complex( 0.0,-1.0) * i(0)*z(1)*x(2)*y(3)*i(4)*z(5)*x(6)
-            + double_complex( 0.0,-1.0) * i(0)*z(1)*y(2)*y(3)*i(4)*z(5)*y(6);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 2
-        auto result = cudaq::solvers::seeley_richard_love(5, 2, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex(-1.0, 0.0) * z(1)*y(2)*y(3)*z(4)*x(5)
-            + double_complex( 0.0, 1.0) * z(1)*x(2)*y(3)*z(4)*x(5)
-            + double_complex( 1.0, 0.0) * z(1)*x(2)*y(3)*y(5)
-            + double_complex( 0.0, 1.0) * z(1)*y(2)*y(3)*y(5);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 3
-        auto result = cudaq::solvers::seeley_richard_love(1, 2, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 1.0, 0.0) * z(0)*y(1)*y(2)
-            + double_complex( 0.0,-1.0) * z(0)*y(1)*x(2)
-            + double_complex( 1.0, 0.0) * i(0)*x(1)*x(2)
-            + double_complex( 0.0, 1.0) * i(0)*x(1)*y(2);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 4
-        auto result = cudaq::solvers::seeley_richard_love(0, 5, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex(-1.0, 0.0) * y(0)*x(1)*i(2)*y(3)*z(4)*x(5)
-            + double_complex( 0.0,-1.0) * x(0)*x(1)*i(2)*y(3)*z(4)*x(5)
-            + double_complex( 1.0, 0.0) * x(0)*x(1)*i(2)*y(3)*i(4)*y(5)
-            + double_complex( 0.0,-1.0) * y(0)*x(1)*i(2)*y(3)*i(4)*y(5);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 6
-        auto result = cudaq::solvers::seeley_richard_love(18, 19, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 1.0, 0.0) * x(18)*i(19)
-            + double_complex( 0.0,-1.0) * y(18)*i(19)
-            + double_complex( 0.0, 1.0) * z(17)*y(18)*z(19)
-            + double_complex(-1.0, 0.0) * z(17)*x(18)*z(19);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 7
-        auto result = cudaq::solvers::seeley_richard_love(17, 3, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 0.0, 1.0) * z(1)*z(2)*x(3)*x(7)*y(15)*z(16)*x(17)*x(19) 
-            + double_complex(-1.0, 0.0) * y(3)*x(7)*y(15)*z(16)*x(17)*x(19) 
-            + double_complex( 1.0, 0.0) * z(1)*z(2)*x(3)*x(7)*y(15)*y(17)*x(19)
-            + double_complex( 0.0, 1.0) * y(3)*x(7)*y(15)*y(17)*x(19);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 7
-        auto result = cudaq::solvers::seeley_richard_love(1, 5, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 0.0,-1.0) * z(0)*x(1)*y(3)*z(4)*x(5) 
-            + double_complex( 1.0, 0.0) * z(0)*x(1)*y(3)*y(5)
-            + double_complex(-1.0, 0.0) * y(1)*y(3)*z(4)*x(5)
-            + double_complex( 0.0,-1.0) * y(1)*y(3)*y(5);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 7
-        auto result = cudaq::solvers::seeley_richard_love(11, 5, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 0.0, 1.0) * z(3)*z(4)*x(5)*y(7)*z(9)*z(10)*x(11)
-            + double_complex(-1.0, 0.0) * z(3)*y(5)*y(7)*z(9)*z(10)*x(11)
-            + double_complex( 1.0, 0.0) * z(3)*z(4)*x(5)*y(7)*y(11)
-            + double_complex( 0.0, 1.0) * z(3)*y(5)*y(7)*y(11);
 
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 8
-        auto result = cudaq::solvers::seeley_richard_love(7, 9, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex( 0.0,-1.0) * z(3)*z(5)*z(6)*y(7)*z(8)*x(9)*x(11)
-            + double_complex( 1.0, 0.0) * z(3)*z(5)*z(6)*y(7)*y(9)*x(11)
-            + double_complex( 1.0, 0.0) * x(7)*z(8)*x(9)*x(11)
-            + double_complex( 0.0, 1.0) * x(7)*y(9)*x(11);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 9
-        auto result = cudaq::solvers::seeley_richard_love(9, 15, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex(-1.0, 0.0) * y(9)*y(11)*z(13)*z(14)
-            + double_complex( 0.0,-1.0) * z(8)*x(9)*y(11)*z(13)*z(14)
-            + double_complex(-1.0, 0.0) * z(7)*z(8)*x(9)*x(11)*z(15)
-            + double_complex( 0.0, 1.0) * z(7)*y(9)*x(11)*z(15);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
-    {
-        // Case 10
-        auto result = cudaq::solvers::seeley_richard_love(9, 15, 4.0, 20);
-        cudaq::spin_op gold = 
-              double_complex(-1.0, 0.0) * y(9)*y(11)*z(13)*z(14) 
-            + double_complex( 0.0,-1.0) * z(8)*x(9)*y(11)*z(13)*z(14)
-            + double_complex(-1.0, 0.0) * z(7)*z(8)*x(9)*x(11)*z(15)
-            + double_complex( 0.0, 1.0) * z(7)*y(9)*x(11)*z(15);
-        auto d = gold - result;
-        d.dump();
-        std::cout << "\n";
-    }
+    auto result = cudaq::solvers::seeley_richard_love(5, 2, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex(-1.0, 0.0) * z(1)*y(2)*y(3)*z(4)*x(5)
+        + double_complex( 0.0, 1.0) * z(1)*x(2)*y(3)*z(4)*x(5)
+        + double_complex( 1.0, 0.0) * z(1)*x(2)*y(3)*y(5)
+        + double_complex( 0.0, 1.0) * z(1)*y(2)*y(3)*y(5);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase3) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(1, 2, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex( 1.0, 0.0) * z(0)*y(1)*y(2)
+        + double_complex( 0.0,-1.0) * z(0)*y(1)*x(2)
+        + double_complex( 1.0, 0.0) * i(0)*x(1)*x(2)
+        + double_complex( 0.0, 1.0) * i(0)*x(1)*y(2);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase4) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(0, 5, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex(-1.0, 0.0) * y(0)*x(1)*i(2)*y(3)*z(4)*x(5)
+        + double_complex( 0.0,-1.0) * x(0)*x(1)*i(2)*y(3)*z(4)*x(5)
+        + double_complex( 1.0, 0.0) * x(0)*x(1)*i(2)*y(3)*i(4)*y(5)
+        + double_complex( 0.0,-1.0) * y(0)*x(1)*i(2)*y(3)*i(4)*y(5);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase6) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(18, 19, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex( 1.0, 0.0) * x(18)*i(19)
+        + double_complex( 0.0,-1.0) * y(18)*i(19)
+        + double_complex( 0.0, 1.0) * z(17)*y(18)*z(19)
+        + double_complex(-1.0, 0.0) * z(17)*x(18)*z(19);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase7) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(11, 5, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex( 0.0, 1.0) * z(3)*z(4)*x(5)*y(7)*z(9)*z(10)*x(11)
+        + double_complex(-1.0, 0.0) * z(3)*y(5)*y(7)*z(9)*z(10)*x(11)
+        + double_complex( 1.0, 0.0) * z(3)*z(4)*x(5)*y(7)*y(11)
+        + double_complex( 0.0, 1.0) * z(3)*y(5)*y(7)*y(11);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase8) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(7, 9, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex( 0.0,-1.0) * z(3)*z(5)*z(6)*y(7)*z(8)*x(9)*x(11)
+        + double_complex( 1.0, 0.0) * z(3)*z(5)*z(6)*y(7)*y(9)*x(11)
+        + double_complex( 1.0, 0.0) * x(7)*z(8)*x(9)*x(11)
+        + double_complex( 0.0, 1.0) * x(7)*y(9)*x(11);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase9) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(9, 15, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex(-1.0, 0.0) * y(9)*y(11)*z(13)*z(14)
+        + double_complex( 0.0,-1.0) * z(8)*x(9)*y(11)*z(13)*z(14)
+        + double_complex(-1.0, 0.0) * z(7)*z(8)*x(9)*x(11)*z(15)
+        + double_complex( 0.0, 1.0) * z(7)*y(9)*x(11)*z(15);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
+}
+
+TEST(BravyiKitaev, testSRLCase10) {
+    using double_complex = std::complex<double>;
+    using namespace cudaq;
+    using namespace spin;
+
+    auto result = cudaq::solvers::seeley_richard_love(3, 7, 4.0, 20);
+    cudaq::spin_op gold = 
+          double_complex( 0.0,-1.0) * z(1)*z(2)*y(3)*z(5)*z(6) 
+        + double_complex( 1.0, 0.0) * x(3)*z(5)*z(6)
+        + double_complex(-1.0, 0.0) * z(1)*z(2)*x(3)*z(7) 
+        + double_complex( 0.0, 1.0) * y(3)*z(7);
+
+    auto [terms, residuals] = (result-gold).get_raw_data();
+    for (auto r : residuals) EXPECT_NEAR(std::abs(r), 0.0, 1e-4);
 }
 
 // Main function
